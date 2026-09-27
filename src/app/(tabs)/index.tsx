@@ -20,13 +20,13 @@ export default function App() {
         Go to onboarding
       </Link>
       <Link
-        href="(auth)/signIn"
+        href="/(auth)/signIn"
         className="mt-4 rounded bg-primary px-4 py-2 text-white"
       >
         Sign In
       </Link>
       <Link
-        href="(auth)/signUp"
+        href="/(auth)/signUp"
         className="mt-4 rounded bg-primary px-4 py-2 text-white"
       >
         Sing Up
