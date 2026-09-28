@@ -4,9 +4,12 @@ import adobe from "@/assets/icons/adobe.png";
 import back from "@/assets/icons/back.png";
 import canva from "@/assets/icons/canva.png";
 import claude from "@/assets/icons/claude.png";
+import cursor from "@/assets/icons/cursor.png";
 import dropbox from "@/assets/icons/dropbox.png";
+import duolingo from "@/assets/icons/duolingo.png";
 import figma from "@/assets/icons/figma.png";
 import github from "@/assets/icons/github.png";
+import google from "@/assets/icons/google.png";
 import home from "@/assets/icons/home.png";
 import medium from "@/assets/icons/medium.png";
 import menu from "@/assets/icons/menu.png";
@@ -15,9 +18,16 @@ import openai from "@/assets/icons/openai.png";
 import plus from "@/assets/icons/plus.png";
 import setting from "@/assets/icons/setting.png";
 import spotify from "@/assets/icons/spotify.png";
+import todoist from "@/assets/icons/todoist.png";
 import wallet from "@/assets/icons/wallet.png";
+import youtube from "@/assets/icons/youtube.png";
 
 export const icons = {
+  cursor,
+  duolingo,
+  google,
+  todoist,
+  youtube,
   home,
   wallet,
   setting,
