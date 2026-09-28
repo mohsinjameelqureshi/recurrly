@@ -147,7 +147,7 @@
   }
 
   .sub-card-expanded {
-    @apply bg-subscription;
+    @apply bg-subscription rounded-tr-3xl rounded-bl-3xl rounded-tl-[0] rounded-br-[0];
   }
 
   .sub-head {
@@ -203,7 +203,7 @@
   }
 
   .sub-label {
-    @apply shrink-0 text-base font-sans-medium text-muted-foreground;
+    @apply shrink-0  font-sans-medium text-muted-foreground;
   }
 
   .sub-value {
