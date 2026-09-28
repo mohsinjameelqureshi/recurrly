@@ -93,7 +93,7 @@ export default function App() {
 
             {/* All subscriptions heading */}
             <View className="mt-4">
-              <ListHeading title="All Subscription" />
+              <ListHeading title="All Subscriptions" />
             </View>
           </>
         }
