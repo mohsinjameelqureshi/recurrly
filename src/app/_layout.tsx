@@ -1,12 +1,26 @@
 import "@/global.css";
 import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
+import { Stack, useGlobalSearchParams, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { ClerkProvider, useAuth, useClerk, useSession } from "@clerk/expo";
+import {
+  ClerkProvider,
+  useAuth,
+  useClerk,
+  useSession,
+  useUser,
+} from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
-import { Component, useEffect, useState, type PropsWithChildren } from "react";
+import {
+  Component,
+  useEffect,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from "react";
 import { ActivityIndicator } from "react-native";
+import { PostHogProvider } from "posthog-react-native";
 import { AuthButton, AuthMessage, AuthShell } from "@/components/auth/AuthUI";
+import { posthog } from "@/config/posthog";
 import { canEnterApp } from "@/lib/auth";
 
 void SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -34,6 +48,34 @@ class AuthBoundary extends Component<
       );
     return this.props.children;
   }
+}
+
+function PostHogTracking() {
+  const pathname = usePathname();
+  const params = useGlobalSearchParams();
+  const previousPathname = useRef<string | undefined>(undefined);
+  const { isLoaded, user } = useUser();
+
+  useEffect(() => {
+    if (!isLoaded || !user || !posthog) return;
+    posthog.identify(user.id, {
+      $set: {
+        email: user.primaryEmailAddress?.emailAddress ?? null,
+        name: user.fullName ?? null,
+      },
+    });
+  }, [isLoaded, user]);
+
+  useEffect(() => {
+    if (!posthog || previousPathname.current === pathname) return;
+    posthog.screen(pathname, {
+      previous_screen: previousPathname.current ?? null,
+      ...params,
+    });
+    previousPathname.current = pathname;
+  }, [params, pathname]);
+
+  return null;
 }
 
 function AuthNavigator({ onRetry }: { onRetry: () => void }) {
@@ -139,9 +181,18 @@ export default function RootLayout() {
       key={attempt}
       onRetry={() => setAttempt((value) => value + 1)}
     >
-      <ClerkProvider publishableKey={key} tokenCache={tokenCache}>
-        <AuthNavigator onRetry={() => setAttempt((value) => value + 1)} />
-      </ClerkProvider>
+      {posthog ? (
+        <PostHogProvider client={posthog}>
+          <ClerkProvider publishableKey={key} tokenCache={tokenCache}>
+            <PostHogTracking />
+            <AuthNavigator onRetry={() => setAttempt((value) => value + 1)} />
+          </ClerkProvider>
+        </PostHogProvider>
+      ) : (
+        <ClerkProvider publishableKey={key} tokenCache={tokenCache}>
+          <AuthNavigator onRetry={() => setAttempt((value) => value + 1)} />
+        </ClerkProvider>
+      )}
     </AuthBoundary>
   );
 }

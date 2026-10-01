@@ -5,6 +5,7 @@ import { styled } from "nativewind";
 import { useState } from "react";
 import { FlatList, Image, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
+import { posthog } from "@/config/posthog";
 import ListHeading from "../../../components/ListHeading";
 import SubscriptionCard from "../../../components/SubscriptionCard";
 import UpcomingSubscriptionCard from "../../../components/UpcomingSubscriptionCard";
@@ -21,6 +22,7 @@ const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
   const { user } = useUser();
+
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
   >(null);
@@ -35,9 +37,14 @@ export default function App() {
             {...item}
             expanded={expandedSubscriptionId === item.id}
             onPress={() =>
-              setExpandedSubscriptionId((currentId) =>
-                currentId === item.id ? null : item.id,
-              )
+              setExpandedSubscriptionId((currentId) => {
+                const expanded = currentId !== item.id;
+                posthog?.capture("subscription_details_toggled", {
+                  subscription_id: item.id,
+                  expanded,
+                });
+                return expanded ? item.id : null;
+              })
             }
           />
         )}

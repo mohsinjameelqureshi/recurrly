@@ -3,6 +3,8 @@ import { useFocusEffect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Image, Pressable, Text, TextInput, View } from "react-native";
+import { posthog } from "@/config/posthog";
+import { analyticsLogger } from "@/config/analyticsLogger";
 import {
   authError,
   authNextStep,
@@ -36,6 +38,7 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
   const { signIn } = useSignIn();
   const { signUp } = useSignUp();
   const clerk = useClerk();
+
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [photo, setPhoto] = useState<{ uri: string; data: string } | null>(
@@ -93,6 +96,16 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
     } catch (error) {
       if (mounted.current && current === generation.current) {
         const mapped = authError(error);
+        posthog?.captureException(new Error(mapped.message), {
+          auth_action: action,
+          auth_mode: mode,
+          auth_step: step,
+        });
+        analyticsLogger.error("authentication operation failed", {
+          auth_action: action,
+          auth_mode: mode,
+          auth_step: step,
+        });
         if (mapped.field) {
           setErrors({ [mapped.field]: mapped.message });
           ({
@@ -193,6 +206,21 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
       }
     }
     checkResult(await resource.finalize());
+    if (session?.user) {
+      posthog?.identify(session.user.id, {
+        $set: {
+          email: session.user.primaryEmailAddress?.emailAddress ?? null,
+          name: session.user.fullName ?? null,
+        },
+      });
+    }
+    posthog?.capture(mode === "signUp" ? "account_created" : "user_signed_in", {
+      verification_method: "email_code",
+    });
+    analyticsLogger.info("authentication completed", {
+      auth_mode: mode,
+      verification_method: "email_code",
+    });
   }
   async function finishSignIn() {
     if (!mounted.current) return;
@@ -242,6 +270,9 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
             signOutOfOtherSessions: true,
           }),
         );
+        posthog?.capture("password_reset_completed", {
+          sign_out_other_sessions: true,
+        });
         await finishSignIn();
         return;
       }
@@ -282,6 +313,9 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
         if (!mounted.current) return;
         setStep("resetCode");
         checkResult(await signIn.resetPasswordEmailCode.sendCode());
+        posthog?.capture("password_reset_requested", {
+          delivery_method: "email_code",
+        });
         sent("resetCode");
       }
     });
@@ -325,6 +359,10 @@ export default function AuthFlow({ mode }: { mode: Mode }) {
       } else if (step === "trustCode") {
         checkResult(await signIn.mfa.sendEmailCode());
       } else checkResult(await signIn.resetPasswordEmailCode.sendCode());
+      posthog?.capture("verification_code_resent", {
+        auth_mode: mode,
+        auth_step: step,
+      });
       setResendAt(Date.now() + 30000);
       setNow(Date.now());
       setNotice("A new code is on its way.");
