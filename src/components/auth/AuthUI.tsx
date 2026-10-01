@@ -43,7 +43,7 @@ export function AuthShell({
           keyboardDismissMode="on-drag"
         >
           <View
-            className={`auth-width ${referenceLayout ? "auth-reference" : ""}`}
+            className={`auth-width will-change-container ${referenceLayout ? "auth-reference" : ""}`}
           >
             <View className="auth-brand-block">
               <View className="auth-logo-wrap">
