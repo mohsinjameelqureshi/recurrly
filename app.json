@@ -45,6 +45,16 @@
             "./assets/fonts/PlusJakartaSans-Light.ttf"
           ]
         }
+      ],
+      "@clerk/expo",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Recurrly to select your profile photo.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

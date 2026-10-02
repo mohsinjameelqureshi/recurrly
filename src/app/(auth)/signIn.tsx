@@ -1,13 +1,2 @@
-import { Link } from "expo-router";
-import { Text, View } from "react-native";
-
-const signIn = () => {
-  return (
-    <View>
-      <Text>signIn</Text>
-      <Link href="/(auth)/signIn">Create Account</Link>
-    </View>
-  );
-};
-
-export default signIn;
+import AuthFlow from '@/components/auth/AuthFlow';
+export default function SignIn() { return <AuthFlow mode="signIn" />; }

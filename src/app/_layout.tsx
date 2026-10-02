@@ -1,10 +1,114 @@
 import "@/global.css";
 import { useFonts } from "expo-font";
-import { SplashScreen, Stack } from "expo-router";
-import { useEffect } from "react";
+import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { ClerkProvider, useAuth, useClerk, useSession } from "@clerk/expo";
+import { tokenCache } from "@clerk/expo/token-cache";
+import { Component, useEffect, useState, type PropsWithChildren } from "react";
+import { ActivityIndicator } from "react-native";
+import { AuthButton, AuthMessage, AuthShell } from "@/components/auth/AuthUI";
+import { canEnterApp } from "@/lib/auth";
+
+void SplashScreen.preventAutoHideAsync().catch(() => {});
+
+class AuthBoundary extends Component<
+  PropsWithChildren<{ onRetry: () => void }>,
+  { failed: boolean }
+> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch() {
+    void SplashScreen.hideAsync();
+  }
+  render() {
+    if (this.state.failed)
+      return (
+        <AuthShell
+          title="Let’s try again"
+          subtitle="We couldn’t connect to your account."
+        >
+          <AuthButton label="Try again" onPress={this.props.onRetry} />
+        </AuthShell>
+      );
+    return this.props.children;
+  }
+}
+
+function AuthNavigator({ onRetry }: { onRetry: () => void }) {
+  const { isLoaded, isSignedIn } = useAuth({ treatPendingAsSignedOut: false });
+  const { session } = useSession();
+  const clerk = useClerk();
+  const [timedOut, setTimedOut] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimedOut(true);
+      void SplashScreen.hideAsync();
+    }, 12000);
+    if (isLoaded) {
+      clearTimeout(timer);
+      void SplashScreen.hideAsync();
+    }
+    return () => clearTimeout(timer);
+  }, [isLoaded]);
+  if (!isLoaded)
+    return (
+      <AuthShell
+        title={timedOut ? "Let’s reconnect" : "Welcome to Recurrly"}
+        subtitle={
+          timedOut
+            ? "Check your connection and try again."
+            : "Getting your account ready…"
+        }
+      >
+        {timedOut ? (
+          <AuthButton label="Try again" onPress={onRetry} />
+        ) : (
+          <ActivityIndicator />
+        )}
+      </AuthShell>
+    );
+  const allowed = canEnterApp(
+    isSignedIn,
+    session?.status,
+    !!session?.currentTask,
+  );
+  if (isSignedIn && !allowed)
+    return (
+      <AuthShell
+        title="One more step"
+        subtitle="Your account requires an additional security step. Sign in again or contact support."
+      >
+        <AuthButton
+          label="Return to sign in"
+          onPress={() => {
+            void clerk
+              .signOut()
+              .catch(() => setError("Couldn’t sign out. Please try again."));
+          }}
+        />
+        <AuthMessage message={error} />
+      </AuthShell>
+    );
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Protected guard={allowed}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="subscriptions/[id]" />
+        <Stack.Screen name="onboarding" />
+      </Stack.Protected>
+      <Stack.Protected guard={!allowed}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+    </Stack>
+  );
+}
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [attempt, setAttempt] = useState(0);
+  const [fontsLoaded, fontError] = useFonts({
     "sans-regular": require("@/assets/fonts/PlusJakartaSans-Regular.ttf"),
     "sans-bold": require("@/assets/fonts/PlusJakartaSans-Bold.ttf"),
     "sans-medium": require("@/assets/fonts/PlusJakartaSans-Medium.ttf"),
@@ -14,17 +118,30 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    if (fontsLoaded) {
-      SplashScreen.preventAutoHideAsync();
-    }
-  }, [fontsLoaded]);
+    if (fontError || !process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY)
+      void SplashScreen.hideAsync();
+  }, [fontError]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded && !fontError) return null;
+  const key = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  if (!key)
+    return (
+      <AuthShell
+        title="We’ll be right back"
+        subtitle="Recurrly isn’t configured to connect to accounts yet."
+      >
+        <AuthMessage message="Please try again after the app configuration is updated." />
+      </AuthShell>
+    );
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="(auth)" />
-    </Stack>
+    <AuthBoundary
+      key={attempt}
+      onRetry={() => setAttempt((value) => value + 1)}
+    >
+      <ClerkProvider publishableKey={key} tokenCache={tokenCache}>
+        <AuthNavigator onRetry={() => setAttempt((value) => value + 1)} />
+      </ClerkProvider>
+    </AuthBoundary>
   );
 }
