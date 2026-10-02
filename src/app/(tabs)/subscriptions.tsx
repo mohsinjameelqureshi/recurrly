@@ -15,12 +15,13 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import SubscriptionCard from "../../../components/SubscriptionCard";
-import { HOME_SUBSCRIPTIONS } from "../../../constants/data";
+import { useSubscriptions } from "@/context/SubscriptionsContext";
 import { colors } from "../../../constants/theme";
 
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function SubscriptionsScreen() {
+  const { subscriptions: allSubscriptions } = useSubscriptions();
   const insets = useSafeAreaInsets();
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
@@ -40,12 +41,12 @@ export default function SubscriptionsScreen() {
   const query = search.trim().toLowerCase();
   const subscriptions = useMemo(
     () =>
-      HOME_SUBSCRIPTIONS.filter((subscription) =>
+      allSubscriptions.filter((subscription) =>
         [subscription.name, subscription.category, subscription.plan].some(
           (value) => value?.toLowerCase().includes(query),
         ),
       ),
-    [query],
+    [query, allSubscriptions],
   );
 
   return (

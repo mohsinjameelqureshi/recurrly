@@ -3,17 +3,15 @@ import { useUser } from "@clerk/expo";
 import dayjs from "dayjs";
 import { styled } from "nativewind";
 import { useState } from "react";
-import { FlatList, Image, Text, View } from "react-native";
+import { FlatList, Image, Pressable, Text, View } from "react-native";
 import { SafeAreaView as RNSafeAreaView } from "react-native-safe-area-context";
 import { posthog } from "@/config/posthog";
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
+import { useSubscriptions } from "@/context/SubscriptionsContext";
 import ListHeading from "../../../components/ListHeading";
 import SubscriptionCard from "../../../components/SubscriptionCard";
 import UpcomingSubscriptionCard from "../../../components/UpcomingSubscriptionCard";
-import {
-  HOME_BALANCE,
-  HOME_SUBSCRIPTIONS,
-  UPCOMING_SUBSCRIPTIONS,
-} from "../../../constants/data";
+import { HOME_BALANCE, UPCOMING_SUBSCRIPTIONS } from "../../../constants/data";
 import { icons } from "../../../constants/icon";
 import images from "../../../constants/images";
 import { formatCurrency } from "../../../lib/utils";
@@ -22,6 +20,8 @@ const SafeAreaView = styled(RNSafeAreaView);
 
 export default function App() {
   const { user } = useUser();
+  const { subscriptions, addSubscription } = useSubscriptions();
+  const [createModalVisible, setCreateModalVisible] = useState(false);
 
   const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<
     string | null
@@ -30,7 +30,7 @@ export default function App() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <FlatList
-        data={HOME_SUBSCRIPTIONS}
+        data={subscriptions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <SubscriptionCard
@@ -69,7 +69,13 @@ export default function App() {
                 </Text>
               </View>
 
-              <Image source={icons.add} className="home-add-icon" />
+              <Pressable
+                onPress={() => setCreateModalVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Add subscription"
+              >
+                <Image source={icons.add} className="home-add-icon" />
+              </Pressable>
             </View>
 
             {/* Balance */}
@@ -116,6 +122,11 @@ export default function App() {
         ListEmptyComponent={
           <Text className="home-empty-state">No subscription yet.</Text>
         }
+      />
+      <CreateSubscriptionModal
+        visible={createModalVisible}
+        onClose={() => setCreateModalVisible(false)}
+        onCreate={addSubscription}
       />
     </SafeAreaView>
   );

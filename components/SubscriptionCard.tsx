@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import { Image, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import SubscriptionIcon from "@/components/SubscriptionIcon";
 import {
   formatCurrency,
   formatStatusLabel,
@@ -11,6 +12,7 @@ const SubscriptionCard = ({
   price,
   currency,
   icon,
+  brandIcon,
   billing,
   color,
   category,
@@ -30,7 +32,7 @@ const SubscriptionCard = ({
     >
       <View className="sub-head">
         <View className="sub-main">
-          <Image source={icon} className="sub-icon" />
+          <SubscriptionIcon slug={brandIcon} fallback={icon} />
           <View className="sub-copy">
             <Text className="sub-title" numberOfLines={1}>
               {name}

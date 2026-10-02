@@ -16,6 +16,7 @@ declare global {
     id: string;
     icon: ImageSourcePropType;
     name: string;
+    brandIcon?: string;
     plan?: string;
     category?: string;
     paymentMethod?: string;
@@ -24,6 +25,7 @@ declare global {
     price: number;
     currency?: string;
     billing: string;
+    frequency?: "Monthly" | "Yearly";
     renewalDate?: string;
     color?: string;
   }
