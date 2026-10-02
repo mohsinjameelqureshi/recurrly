@@ -102,6 +102,7 @@ export default function CreateSubscriptionModal({
       paymentMethod: `Card ending in ${cardLastFour}`,
       color: SUBSCRIPTION_CATEGORY_COLORS[category],
     });
+
     close();
   }
 

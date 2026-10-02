@@ -7,6 +7,7 @@ import {
   type PropsWithChildren,
 } from "react";
 import { HOME_SUBSCRIPTIONS } from "../../constants/data";
+import { posthog } from "@/config/posthog";
 
 interface SubscriptionsContextValue {
   subscriptions: Subscription[];
@@ -22,6 +23,16 @@ export function SubscriptionsProvider({ children }: PropsWithChildren) {
     useState<Subscription[]>(HOME_SUBSCRIPTIONS);
   const addSubscription = useCallback((subscription: Subscription) => {
     setSubscriptions((current) => [subscription, ...current]);
+    posthog?.capture("subscription_created", {
+      subscription_id: subscription.id,
+      subscription_name: subscription.name,
+      price: subscription.price,
+      currency: subscription.currency ?? "USD",
+      frequency: subscription.frequency ?? subscription.billing,
+      category: subscription.category ?? "Other",
+      status: subscription.status ?? "active",
+      brand_icon: subscription.brandIcon ?? null,
+    });
   }, []);
   const value = useMemo(
     () => ({ subscriptions, addSubscription }),
